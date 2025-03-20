@@ -18,17 +18,22 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: '3.9'
-
-          - name: Check files
-          run: |
-           ls -la
-           cat linkedin_monitor.py
+          
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests beautifulsoup4
+      
+      - name: Check files
+        run: |
+          ls -la
+          cat linkedin_monitor.py || echo "File not found"
       
       - name: Run LinkedIn Monitor
-     run: |
-    python -v
-    python -c "import sys; print(sys.path)"
-    python linkedin_monitor.py
+        run: |
+          python -V
+          python -c "import sys; print(sys.path)"
+          python linkedin_monitor.py || echo "Script failed"
       
       - name: Commit changes
         run: |
