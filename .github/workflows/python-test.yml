@@ -19,8 +19,8 @@ jobs:
         with:
           python-version: '3.9'
       
-      - name: Run Python script
-        run: python simple_test.py
+      - name: Run LinkedIn Monitor
+        run: python linkedin_monitor.py
       
       - name: Commit changes
         run: |
