@@ -18,6 +18,11 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: '3.9'
+
+          - name: Check files
+          run: |
+           ls -la
+           cat linkedin_monitor.py
       
       - name: Run LinkedIn Monitor
         run: python linkedin_monitor.py
