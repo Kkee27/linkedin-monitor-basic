@@ -2,49 +2,96 @@ import os
 import json
 import requests
 import datetime
-from bs4 import BeautifulSoup
+import smtplib
+from email.mime.text import MIMEText
 
 # File to store data between runs
 DATA_FILE = "last_check_data.json"
 
-# LinkedIn profile to monitor
+# Profile to monitor - URL will be used for reference only, not for scraping
 PROFILE_URL = "https://www.linkedin.com/in/zieglerr/"
+PROFILE_NAME = "Lukas Ziegler"
 
 # Keywords to look for
 KEYWORDS = ["funding", "investment", "million", "secured", "breaking", "raised"]
+
+# Email settings (get from environment variables in a real setup)
+EMAIL_FROM = os.environ.get('EMAIL_FROM', '')
+EMAIL_TO = os.environ.get('EMAIL_TO', '')
+EMAIL_PASSWORD = os.environ.get('EMAIL_PASSWORD', '')
+SMTP_SERVER = os.environ.get('SMTP_SERVER', 'smtp.gmail.com')
+SMTP_PORT = int(os.environ.get('SMTP_PORT', 587))
 
 def get_previous_data():
     """Load data from previous runs"""
     if os.path.exists(DATA_FILE):
         with open(DATA_FILE, 'r') as f:
             return json.load(f)
-    return {"last_check": None, "last_post_title": None}
+    return {
+        "last_check": None,
+        "last_search_time": None,
+        "known_headlines": []
+    }
 
 def save_current_data(data):
     """Save data for future runs"""
     with open(DATA_FILE, 'w') as f:
         json.dump(data, f)
 
-def fetch_linkedin_activity():
-    """Fetch recent activity from the LinkedIn profile"""
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+def check_new_funding_announcements(person_name, keywords):
+    """
+    Check for new funding announcements by searching for the person's name
+    plus funding-related keywords
+    """
+    # Simulate finding news/announcements
+    # In a real implementation, you could:
+    # 1. Use Google News API
+    # 2. Check company press releases
+    # 3. Search Twitter for mentions
+    
+    current_time = datetime.datetime.now().isoformat()
+    
+    # This is a placeholder - in a real implementation, you'd perform 
+    # an actual search for news about the person + funding keywords
+    return {
+        "search_time": current_time,
+        "headlines": [
+            # Simulated headlines - in a real implementation, these would come from 
+            # your news source or search results
+        ]
     }
+
+def send_email_notification(headline, details):
+    """Send email notification about new funding announcement"""
+    if not all([EMAIL_FROM, EMAIL_TO, EMAIL_PASSWORD]):
+        print("Email settings not configured, skipping notification")
+        return False
+    
+    subject = f"New Funding Announcement: {headline}"
+    
+    body = f"Detected a new funding announcement:\n\n"
+    body += f"Headline: {headline}\n\n"
+    body += f"Details: {details}\n\n"
+    body += f"Person: {PROFILE_NAME}\n"
+    body += f"LinkedIn Profile: {PROFILE_URL}\n\n"
     
     try:
-        response = requests.get(PROFILE_URL, headers=headers)
-        print(f"LinkedIn response status: {response.status_code}")
+        msg = MIMEText(body)
+        msg['Subject'] = subject
+        msg['From'] = EMAIL_FROM
+        msg['To'] = EMAIL_TO
         
-        # We can't extract much without authentication, but can check if page structure changed
-        soup = BeautifulSoup(response.text, 'html.parser')
+        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+        server.starttls()
+        server.login(EMAIL_FROM, EMAIL_PASSWORD)
+        server.send_message(msg)
+        server.quit()
         
-        # Use title as a simple way to detect changes
-        page_title = soup.title.text.strip() if soup.title else "No title found"
-        return page_title
-    
+        print("Email notification sent successfully")
+        return True
     except Exception as e:
-        print(f"Error fetching LinkedIn data: {e}")
-        return None
+        print(f"Failed to send email: {e}")
+        return False
 
 def main():
     # Get previous data
@@ -53,33 +100,43 @@ def main():
     # Record this check
     current_time = datetime.datetime.now().isoformat()
     
-    print(f"Starting LinkedIn check at {current_time}")
+    print(f"Starting funding announcement check at {current_time}")
     print(f"Previous check: {previous_data['last_check']}")
     
-    # Check LinkedIn
-    page_title = fetch_linkedin_activity()
+    # Check for new funding announcements
+    search_results = check_new_funding_announcements(PROFILE_NAME, KEYWORDS)
     
-    # Update data
+    # Get new headlines (not in our known list)
+    known_headlines = set(previous_data.get('known_headlines', []))
+    new_headlines = []
+    
+    for headline in search_results.get('headlines', []):
+        if headline not in known_headlines:
+            new_headlines.append(headline)
+            # Add to known headlines so we don't notify again
+            known_headlines.add(headline)
+    
+    # Send notifications for new headlines
+    for headline in new_headlines:
+        print(f"New funding announcement: {headline}")
+        send_email_notification(headline, f"Found on {search_results['search_time']}")
+    
+    # Update data for next run
     current_data = {
         "last_check": current_time,
-        "last_post_title": page_title
+        "last_search_time": search_results.get('search_time'),
+        "known_headlines": list(known_headlines)
     }
-    
-    # Compare with previous data
-    if previous_data['last_post_title'] != page_title:
-        print("Page title has changed!")
-        print(f"Previous: {previous_data['last_post_title']}")
-        print(f"Current: {page_title}")
-        
-        # Check for keywords
-        if page_title and any(keyword.lower() in page_title.lower() for keyword in KEYWORDS):
-            print("ALERT: Keyword detected in title!")
-    else:
-        print("No change detected in page title")
     
     # Save current data for next run
     save_current_data(current_data)
     print("Data saved for next run")
+    
+    # Summary
+    if new_headlines:
+        print(f"Found {len(new_headlines)} new funding announcements")
+    else:
+        print("No new funding announcements found")
 
 if __name__ == "__main__":
     main()
