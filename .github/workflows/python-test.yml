@@ -1,0 +1,23 @@
+name: Python Test
+
+# Updated workflow file
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  python-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.9'
+      
+      - name: Run Python script
+        run: python simple_test.py
