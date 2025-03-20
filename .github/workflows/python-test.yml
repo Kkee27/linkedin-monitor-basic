@@ -8,6 +8,8 @@ on:
 jobs:
   python-test:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # Explicitly grant write permission
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
@@ -22,8 +24,8 @@ jobs:
       
       - name: Commit changes
         run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add last_run_data.json
-          git commit -m "Update last run data" || echo "No changes to commit"
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add -A
+          git diff --quiet && git diff --staged --quiet || git commit -m "Update last run data"
           git push
