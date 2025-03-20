@@ -1,11 +1,9 @@
 name: Python Test
 
-# Updated workflow file
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
+  schedule:
+    - cron: '0 * * * *'  # Run hourly
 
 jobs:
   python-test:
@@ -21,3 +19,11 @@ jobs:
       
       - name: Run Python script
         run: python simple_test.py
+      
+      - name: Commit changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add last_run_data.json
+          git commit -m "Update last run data" || echo "No changes to commit"
+          git push
