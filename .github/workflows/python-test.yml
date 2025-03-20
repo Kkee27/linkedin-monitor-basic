@@ -25,7 +25,10 @@ jobs:
            cat linkedin_monitor.py
       
       - name: Run LinkedIn Monitor
-        run: python linkedin_monitor.py
+     run: |
+    python -v
+    python -c "import sys; print(sys.path)"
+    python linkedin_monitor.py
       
       - name: Commit changes
         run: |
